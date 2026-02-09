@@ -11,7 +11,7 @@ env:
   BUILD_NUMBER: 1
   BUILD_VERSION: 1.0.0
   PYTHON_VERSION: "3.11"
-  FLUTTER_VERSION: "3.22.2"
+  FLUTTER_VERSION: "3.38.7"   # <-- مهم: نفس النسخة اللي طالبها Flet
 
 jobs:
   build-apk:
@@ -26,14 +26,12 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Python deps (safe)
+      - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            echo "requirements.txt not found - skipping"
-          fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; \
+          elif [ -f requirement.txt ]; then pip install -r requirement.txt; \
+          else echo "No requirements file found"; fi
           pip install flet
           flet --version
 
@@ -51,9 +49,12 @@ jobs:
       - name: Flutter doctor
         run: |
           flutter config --no-analytics
+          flutter --version
           flutter doctor -v
 
       - name: Build APK
+        env:
+          FLET_CLI_NO_RICH_OUTPUT: "true"
         run: |
           flet build apk --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
 
@@ -64,3 +65,4 @@ jobs:
           path: build/apk
           if-no-files-found: error
           overwrite: true
+
