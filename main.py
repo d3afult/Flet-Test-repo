@@ -8,26 +8,34 @@ VALID_PASS = "12345"
 def main(page: ft.Page):
     page.title = "Login App"
 
-    # ✅ توافق مع الإصدارات: بعض الإصدارات فيها page.window وبعضها فيها page.window_width...
-    if hasattr(page, "window"):
+    # (اختياري) لمنع شاشة فاضية بسبب الثيم/الخلفية
+    page.bgcolor = ft.Colors.WHITE
+    page.theme_mode = ft.ThemeMode.LIGHT
+
+    # ✅ إعدادات النافذة فقط لسطح المكتب (مش Android)
+    if hasattr(page, "window") and page.platform in (
+        ft.PagePlatform.WINDOWS,
+        ft.PagePlatform.MACOS,
+        ft.PagePlatform.LINUX,
+    ):
         try:
             page.window.width = 420
             page.window.height = 520
             page.window.resizable = False
         except Exception:
             pass
-    else:
-        # API قديم
-        page.window_width = 420
-        page.window_height = 520
-        page.window_resizable = False
 
     username = ft.TextField(label="Username", width=320)
     password = ft.TextField(label="Password", password=True, can_reveal_password=True, width=320)
     msg = ft.Text(value="", color=ft.Colors.RED)
 
     def exit_app(e):
-        # (اختياري) مؤشر للمستخدم
+        # ✅ على Android: اقفل الصفحة بدون kill للتطبيق
+        if page.platform in (ft.PagePlatform.ANDROID, ft.PagePlatform.IOS):
+            page.window_close()
+            return
+
+        # ✅ Desktop: منطقك السابق (مع failsafe)
         try:
             page.snack_bar = ft.SnackBar(ft.Text("Closing..."))
             page.snack_bar.open = True
@@ -36,32 +44,23 @@ def main(page: ft.Page):
             pass
 
         def really_close():
-            # ✅ الطريقة الموصى بها لسطح المكتب: page.window.close() / destroy()
-            # لكن في بعض الإصدارات destroy يسبب Freeze لثواني، فنجرب close أولًا
             try:
                 if hasattr(page, "window"):
                     try:
-                        page.window.close()   # غالبًا أسرع/أنعم
+                        page.window.close()
                     except Exception:
-                        page.window.destroy() # خيار بديل (قد يتأخر/يعلق لحظات)
+                        page.window.destroy()
                 else:
-                    # API قديم
                     page.close()
             except Exception:
                 pass
 
-            # ✅ Failsafe: لو ما قفل خلال 1 ثانية، اقفل العملية نهائيًا بدون تجميد طويل
-            def force_kill():
-                os._exit(0)
+            threading.Timer(1.0, lambda: os._exit(0)).start()
 
-            threading.Timer(1.0, force_kill).start()
-
-        # نفذ الإغلاق خارج حدث الزر لتقليل "Not Responding"
         threading.Timer(0.05, really_close).start()
 
     def show_login():
         page.controls.clear()
-
         page.add(
             ft.Column(
                 controls=[
@@ -82,7 +81,6 @@ def main(page: ft.Page):
 
     def show_home():
         page.controls.clear()
-
         page.add(
             ft.Column(
                 controls=[
@@ -116,5 +114,6 @@ def main(page: ft.Page):
 
     show_login()
 
-# ✅ تشغيل كنافذة Desktop
-ft.app(target=main, view=ft.AppView.FLET_APP)
+# ✅ خليه كده: يشتغل Desktop + Android
+ft.app(target=main)
+
