@@ -10,37 +10,13 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = ft.Colors.WHITE
 
-    # ✅ إعدادات النافذة فقط لسطح المكتب (مش Android)
-    if hasattr(page, "window") and page.platform in (
-        ft.PagePlatform.WINDOWS,
-        ft.PagePlatform.MACOS,
-        ft.PagePlatform.LINUX,
-    ):
-        try:
-            page.window.width = 420
-            page.window.height = 520
-            page.window.resizable = False
-        except Exception:
-            pass
-
-    username = ft.TextField(label="Username", autofocus=True)
-    password = ft.TextField(label="Password", password=True, can_reveal_password=True)
-    msg = ft.Text(value="", color=ft.Colors.RED)
-
+    # ✅ AppBar ثابت
     def exit_app(e=None):
-        # ✅ Mobile: اقفل الصفحة بدون kill
         if page.platform in (ft.PagePlatform.ANDROID, ft.PagePlatform.IOS):
             page.window_close()
             return
 
-        # ✅ Desktop: اغلاق لطيف + failsafe
-        try:
-            page.snack_bar = ft.SnackBar(ft.Text("Closing..."))
-            page.snack_bar.open = True
-            page.update()
-        except Exception:
-            pass
-
+        # Desktop close (failsafe)
         def really_close():
             try:
                 if hasattr(page, "window"):
@@ -52,35 +28,31 @@ def main(page: ft.Page):
                     page.close()
             except Exception:
                 pass
-
             threading.Timer(1.0, lambda: os._exit(0)).start()
 
         threading.Timer(0.05, really_close).start()
 
-    # ✅ AppBar ثابت لكل الصفحات
     page.appbar = ft.AppBar(
         title=ft.Text("Login App"),
         center_title=True,
-        actions=[
-            ft.IconButton(icon=ft.Icons.EXIT_TO_APP, tooltip="Exit", on_click=exit_app)
-        ],
+        actions=[ft.IconButton(icon=ft.Icons.EXIT_TO_APP, on_click=exit_app)],
     )
 
-    # ✅ حاوية محتوى Responsive: تاخذ عرض الشاشة لكن تحده في الشاشات الكبيرة
-    content = ft.Container(
-        padding=20,
-        alignment=ft.alignment.center,
+    # ✅ جذر بسيط وواضح
+    root = ft.Column(
         expand=True,
-        content=ft.Column(
-            expand=True,
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=[],
-        ),
+        alignment=ft.MainAxisAlignment.CENTER,
+        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        controls=[],
     )
+    page.add(root)
 
-    def build_card(controls):
-        # كارد وسط الشاشة، يتمدد على الموبايل ويكون شكله مرتب على الكبير
+    username = ft.TextField(label="Username", autofocus=True)
+    password = ft.TextField(label="Password", password=True, can_reveal_password=True)
+    msg = ft.Text("", color=ft.Colors.RED)
+
+    def card(controls):
+        # ✅ بدون shadow (عشان ما يكسر على بعض الإصدارات)
         return ft.Container(
             content=ft.Column(
                 controls=controls,
@@ -90,70 +62,74 @@ def main(page: ft.Page):
             padding=20,
             border_radius=16,
             bgcolor=ft.Colors.WHITE,
-            shadow=ft.BoxShadow(
-                blur_radius=18,
-                spread_radius=1,
-                color=ft.Colors.BLACK12,
-                offset=ft.Offset(0, 6),
-            ),
-            width=420,              # حد أقصى شكلي على الكبير
-            # على الموبايل بيتمدد تلقائياً بسبب الـ layout والـ padding
+            width=360,  # شكل مرتب على الموبايل
         )
 
-    def show_login():
-        msg.value = ""
-        username.value = ""
-        password.value = ""
-
-        card = build_card([
-            ft.Text("Login", size=28, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
-            username,
-            password,
-            msg,
-            ft.ElevatedButton(text="Login", on_click=handle_login),
-            ft.OutlinedButton(text="Exit App", on_click=exit_app),
-        ])
-
-        content.content.controls.clear()
-        content.content.controls.append(
-            ft.Row(
-                controls=[card],
-                alignment=ft.MainAxisAlignment.CENTER,
+    def render(widget):
+        root.controls.clear()
+        # ✅ سنتر + بادينج مناسب لأي شاشة
+        root.controls.append(
+            ft.Container(
+                expand=True,
+                alignment=ft.alignment.center,
+                padding=20,
+                content=widget,
             )
         )
         page.update()
 
-    def show_home():
-        card = build_card([
-            ft.Text(f"Hi {VALID_USER}", size=30, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
-            ft.ElevatedButton(text="Logout", on_click=handle_logout),
-            ft.OutlinedButton(text="Exit App", on_click=exit_app),
-        ])
-
-        content.content.controls.clear()
-        content.content.controls.append(
-            ft.Row(
-                controls=[card],
-                alignment=ft.MainAxisAlignment.CENTER,
-            )
+    def show_error(err: Exception):
+        render(
+            card([
+                ft.Text("UI Error", size=22, weight=ft.FontWeight.BOLD),
+                ft.Text(str(err)),
+                ft.ElevatedButton("Back", on_click=lambda e: show_login()),
+            ])
         )
-        page.update()
 
     def handle_login(e):
         u = (username.value or "").strip()
         p = (password.value or "").strip()
-
         if u == VALID_USER and p == VALID_PASS:
+            msg.value = ""
             show_home()
         else:
             msg.value = "Wrong username or password"
             page.update()
 
     def handle_logout(e):
+        password.value = ""
+        msg.value = ""
         show_login()
 
-    # ✅ ضع المحتوى مرة واحدة
-    page.add(content)
+    def show_login():
+        try:
+            msg.value = ""
+            render(
+                card([
+                    ft.Text("Login", size=28, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
+                    username,
+                    password,
+                    msg,
+                    ft.ElevatedButton("Login", on_click=handle_login),
+                    ft.OutlinedButton("Exit App", on_click=exit_app),
+                ])
+            )
+        except Exception as ex:
+            show_error(ex)
+
+    def show_home():
+        try:
+            render(
+                card([
+                    ft.Text(f"Hi {VALID_USER}", size=30, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
+                    ft.ElevatedButton("Logout", on_click=handle_logout),
+                    ft.OutlinedButton("Exit App", on_click=exit_app),
+                ])
+            )
+        except Exception as ex:
+            show_error(ex)
+
     show_login()
 
 ft.app(target=main)
