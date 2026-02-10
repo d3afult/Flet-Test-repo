@@ -11,8 +11,7 @@ env:
   BUILD_NUMBER: 1
   BUILD_VERSION: 1.0.0
   PYTHON_VERSION: "3.11"
-  FLUTTER_VERSION: "3.38.  
-8.7"
+  FLUTTER_VERSION: "3.38.7"
 
 jobs:
   build-apk:
@@ -33,8 +32,6 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; \
           elif [ -f requirement.txt ]; then pip install -r requirement.txt; \
           else echo "No requirements file found"; fi
-
-          # ثبّت flet صراحة (لتفادي تغيّر نسخة فجأة)
           pip install "flet==0.80.5"
           flet --version
 
@@ -55,14 +52,14 @@ jobs:
           flutter --version
           flutter doctor -v
 
-      - name: Build APK (arm64)
+      - name: Build APK
         run: |
-          flet build apk --verbose --arch arm64-v8a --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
+          flet build apk --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: apk-arm64
+          name: apk-build
           path: build/apk
           if-no-files-found: error
           overwrite: true
