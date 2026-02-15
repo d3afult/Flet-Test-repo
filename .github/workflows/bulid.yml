@@ -5,38 +5,65 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+env:
+  PYTHON_VERSION: "3.11"
+  JAVA_VERSION: "17"
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. سحب الكود
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install Flet (Latest)
-        run: |
-          python -m pip install --upgrade pip
-          pip install flet  # خليه ياخذ آخر نسخة مستقرة 0.25.x مثلاً
-          flet --version
-
-      - name: Setup Java (Android)
+      # 2. تجهيز بيئة الجافا (ضرورية للأندرويد)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: ${{ env.JAVA_VERSION }}
 
+      # 3. تجهيز بيئة البايثون
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # 4. تجهيز فلاتر (النسخة المستقرة)
+      # هذا يخلي فلاتر جاهز من الأول عشان flet ما يتعبش
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
+      # 5. تنزيل المكتبات (Flet وغيرها)
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          
+          # هنا اللقطة: لو عندك requirements يسطبها
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            # لو ما عندكش، يسطب آخر نسخة من flet
+            pip install flet
+          fi
+          
+          # عرض النسخة للتأكيد في اللوج
+          flet --version
+
+      # 6. بناء ملف الـ APK
+      # كلمة yes | قبل الأمر بتجاوب "نعم" على أي سؤال يسأله النظام
       - name: Build APK
         run: |
-          # نزيدوا خيار الـ --no-interactive أو نستخدموا yes
-          # في النسخ الجديدة الأمر صار أحسن
-          flet build apk --verbose
+          yes | flet build apk --verbose
+
+      # 7. رفع الملف الناتج عشان تقدر تحمله
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: flet-app-release
+          path: build/apk/*.apk
+          if-no-files-found: error
