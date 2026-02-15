@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -18,14 +18,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install Flet (Latest)
         run: |
           python -m pip install --upgrade pip
-          # تسطيب flet - يفضل نسخة حديثة إلا لو مشروعك يعتمد على قديم
-          pip install flet
-          # لو تبي النسخة اللي أنت كتبتها بالظبط: pip install flet==0.8.4
+          pip install flet  # خليه ياخذ آخر نسخة مستقرة 0.25.x مثلاً
+          flet --version
 
-      - name: Setup Java
+      - name: Setup Java (Android)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -34,16 +33,10 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable' # خليه هو يختار أحسن نسخة مستقرة تلقائياً
+          channel: 'stable'
 
       - name: Build APK
         run: |
-          # أمر الـ build الجديد في flet
+          # نزيدوا خيار الـ --no-interactive أو نستخدموا yes
+          # في النسخ الجديدة الأمر صار أحسن
           flet build apk --verbose
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: my-flet-app
-          # الـ flet build يحط في الملفات في هذا المسار عادةً
-          path: build/apk/*.apk
