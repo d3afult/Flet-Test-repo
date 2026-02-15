@@ -1,113 +1,61 @@
 import flet as ft
-
-VALID_USER = "Ali"
-VALID_PASS = "12345"
+import traceback
 
 def main(page: ft.Page):
-    # إعدادات الصفحة
-    page.title = "Login App"
+    # إعدادات أساسية عشان نضمنوا الرؤية
+    page.title = "Test App"
     page.theme_mode = ft.ThemeMode.LIGHT
     page.bgcolor = ft.Colors.WHITE
-    
-    # أهم سطر للموبايل: يخلي الصفحة تقبل السكرول لو المحتوى طويل
-    page.scroll = ft.ScrollMode.AUTO
-    
-    # محاذاة العناصر
-    page.vertical_alignment = ft.MainAxisAlignment.CENTER
-    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.padding = 20
+    page.scroll = "adaptive"  # مهم جداً للموبايل
 
-    # AppBar
+    # الـ AppBar
     page.appbar = ft.AppBar(
-        title=ft.Text("Login App"),
+        title=ft.Text("Login Test"),
         center_title=True,
-        bgcolor=ft.Colors.BLUE_50,
+        bgcolor=ft.Colors.BLUE_100,
     )
 
-    # عناصر الإدخال
-    username = ft.TextField(label="Username", autofocus=True)
-    password = ft.TextField(label="Password", password=True, can_reveal_password=True)
-    msg = ft.Text("", color=ft.Colors.RED)
+    # هنا اللقطة: نبي نطبع أي خطأ يصير على الشاشة طول
+    try:
+        # عناصر بسيطة ومباشرة بدون دوال معقدة
+        t_title = ft.Text("Login Page", size=30, color="black", weight="bold")
+        tf_user = ft.TextField(label="Username", width=300)
+        tf_pass = ft.TextField(label="Password", password=True, width=300)
+        btn_login = ft.ElevatedButton("Login", width=300, height=50)
 
-    # دالة العرض الرئيسية
-    def show(view: ft.Control):
-        page.clean() # بديل لـ controls.clear() أحياناً يكون أضمن
-        
-        # استخدام SafeArea ضروري في الموبايل عشان ما يجيش المحتوى تحت شريط الساعة
-        page.add(
-            ft.SafeArea(
-                ft.Container(
-                    # نحول الـ expand=True عشان ما يسببش مشاكل مع الـ Scroll
-                    padding=20,
-                    alignment=ft.alignment.center,
-                    content=ft.Container(
-                        # نخلو العرض مرن، أقصى شي 400 لكن يصغر لو الشاشة صغيرة
-                        width=None, 
-                        constraints=ft.BoxConstraints(max_width=400),
-                        padding=20,
-                        border_radius=16,
-                        # حطيتلك لون خلفية خفيف (رمادي) عشان تميز الكونتينر عن الخلفية البيضاء
-                        bgcolor=ft.Colors.GREY_100, 
-                        content=view,
-                    ),
-                ),
-                expand=True, # SafeArea هو اللي ياخذ الـ expand
-            )
-        )
-        page.update()
-
-    def handle_login(e):
-        u = (username.value or "").strip()
-        p = (password.value or "").strip()
-
-        if u == VALID_USER and p == VALID_PASS:
-            msg.value = ""
-            show_home()
-        else:
-            msg.value = "Wrong username or password"
+        # دالة بسيطة للزر
+        def on_click(e):
+            if tf_user.value == "Ali" and tf_pass.value == "123":
+                page.snack_bar = ft.SnackBar(ft.Text("Success!"))
+                page.snack_bar.open = True
+            else:
+                page.snack_bar = ft.SnackBar(ft.Text("Wrong!"))
+                page.snack_bar.open = True
             page.update()
 
-    def handle_logout(e):
-        username.value = ""
-        password.value = ""
-        msg.value = ""
-        show_login()
+        btn_login.on_click = on_click
 
-    def show_login():
-        msg.value = ""
-        show(
+        # الإضافة المباشرة للصفحة (أضمن طريقة)
+        page.add(
             ft.Column(
-                controls=[
-                    ft.Text("Login", size=28, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
-                    username,
-                    password,
-                    msg,
-                    ft.ElevatedButton(
-                        "Login", 
-                        on_click=handle_login,
-                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8)),
-                        height=50, # تكبير الزر شوية للمس
-                    ),
+                [
+                    t_title,
+                    tf_user,
+                    tf_pass,
+                    btn_login
                 ],
-                spacing=15,
-                # هذا يخلي العناصر تتمدد لعرض الكونتينر
-                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
-            )
-        )
-
-    def show_home():
-        show(
-            ft.Column(
-                controls=[
-                    ft.Icon(ft.Icons.CHECK_CIRCLE, size=60, color=ft.Colors.GREEN),
-                    ft.Text(f"Ahlan {VALID_USER}", size=30, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
-                    ft.ElevatedButton("Logout", on_click=handle_logout, height=50),
-                ],
+                alignment=ft.MainAxisAlignment.START, # يبدأ من فوق
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=20,
-                horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
             )
         )
+    
+    except Exception as e:
+        # لو صار أي خطأ فني، حيطلعلك مكتوب بالأحمر ع الشاشة
+        page.add(ft.Text(f"Error: {e}\n{traceback.format_exc()}", color="red"))
 
-    show_login()
+    page.update()
 
 if __name__ == "__main__":
     ft.app(target=main)
