@@ -18,49 +18,44 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. تجهيز بيئة الجافا (ضرورية للأندرويد)
+      # 2. تجهيز الجافا (للأندرويد)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
-      # 3. تجهيز بيئة البايثون
+      # 3. تجهيز البايثون
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
       # 4. تجهيز فلاتر (النسخة المستقرة)
-      # هذا يخلي فلاتر جاهز من الأول عشان flet ما يتعبش
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      # 5. تنزيل المكتبات (Flet وغيرها)
+      # 5. تنزيل المكتبات
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          
-          # هنا اللقطة: لو عندك requirements يسطبها
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt
           else
-            # لو ما عندكش، يسطب آخر نسخة من flet
             pip install flet
           fi
-          
-          # عرض النسخة للتأكيد في اللوج
           flet --version
 
-      # 6. بناء ملف الـ APK
-      # كلمة yes | قبل الأمر بتجاوب "نعم" على أي سؤال يسأله النظام
+      # 6. بناء ملف الـ APK (التعديل هنا)
       - name: Build APK
         run: |
-          yes | flet build apk --verbose
+          # نستخدم --include-assets عشان يضمن وجود مجلد assets داخل الـ APK
+          # ونستخدم --icon عشان أيقونة التطبيق الخارجية
+          yes | flet build apk --verbose --include-assets --icon assets/icon.png
 
-      # 7. رفع الملف الناتج عشان تقدر تحمله
+      # 7. رفع الملف الناتج
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
