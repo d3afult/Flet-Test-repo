@@ -55,11 +55,10 @@ jobs:
           flet --version
 
       # 6. بناء ملف الـ APK
-      # كلمة yes | قبل الأمر بتجاوب "نعم" على أي سؤال يسأله النظام
-      # تمت إضافة --icon و --include-assets هنا فقط
+      # Flet سيتعرف تلقائياً على مجلد assets وصورة icon.png الموجودة داخله
       - name: Build APK
         run: |
-          yes | flet build apk --verbose --icon assets/icon.png --include-assets
+          yes | flet build apk --verbose
 
       # 7. رفع الملف الناتج عشان تقدر تحمله
       - name: Upload APK
